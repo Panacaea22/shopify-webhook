@@ -33,10 +33,7 @@ exports.handler = async (event) => {
 
     const order = JSON.parse(event.body || "{}");
 
-    // Only fire if payment is captured
-    if (order.financial_status !== "paid") {
-      return { statusCode: 200, body: JSON.stringify({ ignored: true, reason: "not paid" }) };
-    }
+
 
     // ----- IDENTIFIERS -----
     const email = (order.email || (order.customer && order.customer.email) || "").trim();
