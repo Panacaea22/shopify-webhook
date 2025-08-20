@@ -2,7 +2,7 @@
 const crypto = require("crypto");
 const fetch = require("node-fetch"); // requires node-fetch v2
 
-// ENV VARS (set in Netlify → Site Settings → Environment Variables)
+// ENV VARS (set in Netlify → Environment Variables)
 const META_PIXEL_ID = process.env.META_PIXEL_ID;           // e.g. 4321219291479784
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;   // Your Meta CAPI token
 const SHOPIFY_WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET || ""; 
@@ -72,6 +72,7 @@ exports.handler = async (event) => {
       new Date(order.processed_at || order.updated_at || Date.now()).getTime() / 1000
     );
 
+    // ----- EVENT DATA -----
     const eventData = {
       event_name: "Purchase",
       event_time,
@@ -84,3 +85,36 @@ exports.handler = async (event) => {
         fbp,
         fbc,
       },
+      custom_data: {
+        currency,
+        value,
+        contents,
+      },
+    };
+
+    // Build payload for Meta
+    const payload = {
+      data: [eventData],
+      access_token: META_ACCESS_TOKEN,
+      ...(META_TEST_EVENT_CODE ? { test_event_code: META_TEST_EVENT_CODE } : {}),
+    };
+
+    const fbResponse = await fetch(
+      `https://graph.facebook.com/v17.0/${META_PIXEL_ID}/events`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const fbJson = await fbResponse.json();
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, fb: fbJson }),
+    };
+  } catch (err) {
+    return { statusCode: 500, body: err.toString() };
+  }
+};
