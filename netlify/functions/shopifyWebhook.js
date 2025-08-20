@@ -1,6 +1,6 @@
 // netlify/functions/shopifyWebhook.js
 const crypto = require("crypto");
-const fetch = require("node-fetch");
+const fetch = require("node-fetch"); // requires node-fetch v2
 
 // ENV VARS (set in Netlify → Site Settings → Environment Variables)
 const META_PIXEL_ID = process.env.META_PIXEL_ID;           // e.g. 4321219291479784
@@ -84,41 +84,3 @@ exports.handler = async (event) => {
         fbp,
         fbc,
       },
-      custom_data: {
-        currency,
-        value,
-        contents,
-        num_items: contents.reduce((s, c) => s + (c.quantity || 0), 0),
-        content_type: "product",
-      },
-    };
-
-    const url = `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events?access_token=${encodeURIComponent(
-      META_ACCESS_TOKEN
-    )}`;
-    const body = META_TEST_EVENT_CODE
-      ? JSON.stringify({ data: [eventData], test_event_code: META_TEST_EVENT_CODE })
-      : JSON.stringify({ data: [eventData] });
-
-    const fbRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    });
-
-    const fbJson = await fbRes.json();
-
-    if (!fbRes.ok) {
-      console.error("Meta CAPI error", fbJson);
-      return { statusCode: 502, body: JSON.stringify({ error: "Meta CAPI failed", details: fbJson }) };
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true, event_id: eventId, fb: fbJson }),
-    };
-  } catch (err) {
-    console.error("Function error:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Server error", details: err.message }) };
-  }
-};
