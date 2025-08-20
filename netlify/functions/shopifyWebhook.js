@@ -4,6 +4,8 @@ exports.handler = async (event, context) => {
 
     // Only track paid orders
     if (body.financial_status === "paid") {
+      const eventId = String(body.id); // Shopify order ID as event_id
+
       // Call Meta Pixel Conversion API
       await fetch("https://graph.facebook.com/v17.0/4321219291479784/events?access_token=EAAN1IerTq3sBPPnbRQ5DBqMD1RK07OnSuWilSIRJ9oo4QOhfVKp1DBcrpZAqYVv8qZCnzwsGN0uHk0BzcmikYLv6t87NzZARYLLZABvF05vfDmd7MxjmRZBFgF8ezWWR3vYSTQkfxTz6TR63SVEbsrJYe9Nl7CrUp8guRlgmY31EjBnYvBhZAw3qc7bvOGDIkWhAZDZD", {
         method: "POST",
@@ -13,6 +15,7 @@ exports.handler = async (event, context) => {
             {
               event_name: "Purchase",
               event_time: Math.floor(Date.now() / 1000),
+              event_id: eventId, // <--- IMPORTANT
               user_data: {
                 em: [ body.email ? body.email : "" ] // hashed email if available
               },
