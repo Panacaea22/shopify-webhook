@@ -24,16 +24,18 @@ function verifyShopifyHmac(rawBody, hmacHeader, secret) {
 
 exports.handler = async (event) => {
   try {
+    console.log("✅ Webhook triggered!");
+
     // Verify Shopify HMAC
     const hmacHeader =
       event.headers["x-shopify-hmac-sha256"] || event.headers["X-Shopify-Hmac-Sha256"];
     if (!verifyShopifyHmac(event.body || "", hmacHeader, SHOPIFY_WEBHOOK_SECRET)) {
+      console.error("❌ Invalid HMAC");
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid HMAC" }) };
     }
 
     const order = JSON.parse(event.body || "{}");
-
-
+    console.log("📦 Incoming Shopify payload:", order);
 
     // ----- IDENTIFIERS -----
     const email = (order.email || (order.customer && order.customer.email) || "").trim();
@@ -44,14 +46,12 @@ exports.handler = async (event) => {
       ""
     ).replace(/\D/g, "");
 
-    // Pull fbp/fbc from note_attributes (set via Customer Events script)
     const noteAttrs = Object.fromEntries(
       (order.note_attributes || []).map((a) => [a.name, a.value])
     );
     const fbp = noteAttrs._fbp || undefined;
     const fbc = noteAttrs._fbc || undefined;
 
-    // Deduplication key: match browser (checkout.id)
     const eventId = String(order.checkout_id || order.id);
 
     // ----- VALUES -----
@@ -88,12 +88,13 @@ exports.handler = async (event) => {
       },
     };
 
-    // Build payload for Meta
     const payload = {
       data: [eventData],
       access_token: META_ACCESS_TOKEN,
       ...(META_TEST_EVENT_CODE ? { test_event_code: META_TEST_EVENT_CODE } : {}),
     };
+
+    console.log("🚀 Payload sent to Meta:", payload);
 
     const fbResponse = await fetch(
       `https://graph.facebook.com/v17.0/${META_PIXEL_ID}/events`,
@@ -105,12 +106,14 @@ exports.handler = async (event) => {
     );
 
     const fbJson = await fbResponse.json();
+    console.log("✅ Meta response:", fbJson);
 
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, fb: fbJson }),
     };
   } catch (err) {
+    console.error("❌ Error in webhook:", err);
     return { statusCode: 500, body: err.toString() };
   }
 };
