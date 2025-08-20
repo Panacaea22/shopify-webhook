@@ -1,6 +1,5 @@
 // netlify/functions/shopifyWebhook.js
 const crypto = require("crypto");
-const fetch = require("node-fetch"); // requires node-fetch v2
 
 // ENV VARS (set in Netlify → Environment Variables)
 const META_PIXEL_ID = process.env.META_PIXEL_ID;           // e.g. 4321219291479784
