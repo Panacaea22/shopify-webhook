@@ -33,6 +33,10 @@ exports.handler = async (event) => {
       console.error("❌ Invalid HMAC");
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid HMAC" }) };
     }
+    // Only fire if payment is captured
+    if (order.financial_status !== "paid") {
+      return { statusCode: 200, body: JSON.stringify({ ignored: true, reason: "not paid" }) };
+    }
 
     const order = JSON.parse(event.body || "{}");
     console.log("📦 Incoming Shopify payload:", order);
